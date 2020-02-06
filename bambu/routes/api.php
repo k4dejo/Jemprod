@@ -13,11 +13,11 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
+/*Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-/*Route::group(['middleware' => 'cors'], function(){
+Route::group(['middleware' => 'cors'], function(){
     //aqui van todas las rutas que necesitan CORS
 });*/
 
