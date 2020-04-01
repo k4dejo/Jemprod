@@ -135,6 +135,9 @@ class PurchaseController extends Controller
             $purchase->coupon_id = $params->coupon_id;
             $purchase->shipping = $params->shipping;
             $purchase->orderId  = \Str::random(20);
+            if ($params->addresspurchases_id != 0) {
+                $purchase->addresspurchases_id = $params->addresspurchases_id;
+            }
             $isset_purchase = DB::table('purchases')->where('clients_id', $params->clients_id)
             ->where('status', $params->status)->get();
             $countPurchase = count($isset_purchase);
@@ -273,31 +276,44 @@ class PurchaseController extends Controller
             $purchase = purchase::findOrFail($params->purchase_id);
             $arrayProductPurchase = purchase::find($params->purchase_id)->articles()->get();
             $countGetProductPurchase = count($arrayProductPurchase);
-            for ($i=0; $i < $countGetProductPurchase ; $i++) {
-                if ($arrayProductPurchase[$i]->pivot->article_id != $params->article_id) {
-                    $purchase->articles()->
-                    attach($params->article_id,['amount'=>$params->amount, 'size'=>$params->size]);
-                    $data = array(
-                        'article' => $purchase,
-                        'status'  => 'success',
-                        'attach'  => $purchase->articles()->get(),
-                        'code'    => 200,
-                    );
-                    return response()->json($data, 200);
+            if ($countGetProductPurchase >= 1) {
+                for ($i=0; $i < $countGetProductPurchase ; $i++) {
+                    if ($arrayProductPurchase[$i]->pivot->article_id != $params->article_id) {
+                        $purchase->articles()->
+                        attach($params->article_id,['amount'=>$params->amount, 'size'=>$params->size]);
+                        $data = array(
+                            'article' => $purchase,
+                            'status'  => 'success',
+                            'attach'  => $purchase->articles()->get(),
+                            'code'    => 200,
+                        );
+                        return response()->json($data, 200);
+                    }
+                    if ($arrayProductPurchase[$i]->pivot->article_id = $params->article_id) {
+                        $arrayProductPurchase[$i]->pivot->amount += $params->amount;
+                        $purchase->articles()
+                        ->updateExistingPivot($params->article_id,['amount' => $arrayProductPurchase[$i]->pivot->amount ]);
+                        $data = array(
+                            'article' => $purchase,
+                            'status'  => 'success',
+                            'attach'  => $purchase->articles()->get(),
+                            'code'    => 200,
+                        );
+                        return response()->json($data, 200);
+                    }
                 }
-                if ($arrayProductPurchase[$i]->pivot->article_id = $params->article_id) {
-                    $arrayProductPurchase[$i]->pivot->amount += $params->amount;
-                    $purchase->articles()
-                    ->updateExistingPivot($params->article_id,['amount' => $arrayProductPurchase[$i]->pivot->amount ]);
-                    $data = array(
-                        'article' => $purchase,
-                        'status'  => 'success',
-                        'attach'  => $purchase->articles()->get(),
-                        'code'    => 200,
-                    );
-                    return response()->json($data, 200);
-                }
+            }else {
+                $purchase->articles()->
+                attach($params->article_id,['amount'=>$params->amount, 'size'=>$params->size]);
+                $data = array(
+                    'article' => $purchase,
+                    'status'  => 'success',
+                    'attach'  => $purchase->articles()->get(),
+                    'code'    => 200,
+                );
+                return response()->json($data, 200);
             }
+
             $data = array(
                 'article' => $purchase,
                 'status'  => 'success',
