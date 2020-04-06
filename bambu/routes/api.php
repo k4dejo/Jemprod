@@ -56,6 +56,7 @@ Route::group(['middleware' => 'cors'], function(){
    Route::post('size/CrearTalla','sizeController@store');
    Route::post('size/addTalla','sizeController@Attachsize');
    Route::post('detachRelation', 'sizeController@detachRelation');
+   Route::put('updateSizeAmountProduct/{id}', 'sizeController@changeAmountProduct');
    Route::get('getTalla/{id}','sizeController@showSizeP');
    Route::get('getTallaEdit/{id}','sizeController@showEditP');
    Route::delete('deleteTalla/{id}','sizeController@detachSize');
@@ -121,6 +122,7 @@ Route::group(['middleware' => 'cors'], function(){
    Route::get('showProductSizeList/{id}' , 'ArticleController@showSizeList');
    Route::get('getConcreteProduct/{id}/{gender}', 'ArticleController@getConcreteProduct');
    Route::get('getproductGender/{id}', 'ArticleController@getProductGender');
+   Route::get('showPhotoProduct/{id}', 'ArticleController@showPhotoProduct');
    Route::get('filterPriceProduct/{department}/{priceMin}/{priceMax}', 'ArticleController@filterPriceProduct');
    Route::get('filterSizeProduct/{department}/{gender}/{size}', 'ArticleController@filterSizeProduct');
    /*tags*/
