@@ -211,7 +211,7 @@ class ArticleController extends Controller
                 $img = str_replace(' ', '+', $img);
             }
             $imgName = time() . $params->photo;
-            $resized_image = Image::make(base64_decode($img))->resize(450, 400)->stream('jpg', 80);
+            $resized_image = Image::make(base64_decode($img))->resize(450, 400)->stream('jpg', 70);
             Storage::disk('local')->put($imgName, $resized_image);
             //guardar articulo
             $article = new article();
@@ -284,7 +284,7 @@ class ArticleController extends Controller
                 unset($paramsArray['created_at']);
                 unset($paramsArray['file']);
                 Storage::delete($imgDB->photo);
-                $resized_image = Image::make(base64_decode($img))->resize(450, 400)->stream('jpg', 80);
+                $resized_image = Image::make(base64_decode($img))->resize(450, 400)->stream('jpg', 70);
                 Storage::disk('local')->put($imgName, $resized_image);
                 $article = article::where('id', $id)->update($paramsArray);
             }else {
