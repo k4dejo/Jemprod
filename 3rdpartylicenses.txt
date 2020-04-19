@@ -440,6 +440,8 @@ SOFTWARE.
 ngx-dropzone
 MIT
 
+ngx-image-compress
+
 @angular/animations
 MIT
 
