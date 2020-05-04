@@ -131,10 +131,10 @@ class apartController extends Controller
         //$ApartClient = DB::table('aparts')->where('clients_id', $idApart)->first();
         $arrayApart = apart::find($idApart)->articles()->get();
         $countApart = count($arrayApart);
-        for ($i=0; $i < $countApart; $i++) {
+        /*for ($i=0; $i < $countApart; $i++) {
             $contents = Storage::get($arrayApart[$i]->photo);
             $arrayApart[$i]->photo = base64_encode($contents);
-        }
+        }*/
         $data = array(
             'apart'       => $arrayApart,
             'status'         => 'success',
@@ -148,10 +148,10 @@ class apartController extends Controller
         $arrayApart = apart::find($ApartClient->id)->articles()->get();
         $countApart = count($arrayApart);
         if ($countApart  > 0) {
-            for ($i=0; $i < $countApart; $i++) {
+            /*for ($i=0; $i < $countApart; $i++) {
                 $contents = Storage::get($arrayApart[$i]->photo);
                 $arrayApart[$i]->photo = base64_encode($contents);
-            }
+            }*/
             $data = array(
                 'apart'       => $arrayApart,
                 'status'         => 'success',
@@ -182,6 +182,43 @@ class apartController extends Controller
             }
         }
         return 'Error';
+    }
+
+    public function detachArrayProduct($idApart, $dataDetach) {
+        // recoger datos del POST
+        $json =  $dataDetach->input('json', null);
+        $params = json_decode($json);
+        $paramsArray = json_decode($json,true);
+        $countArrayProduct = count($paramsArray);
+        $apart = apart::findOrFail($idApart);
+        $apart->articles()->wherePivot('apart_id', $idApart)->detach();
+        /*for ($i=0; $i < $countArrayProduct; $i++) {
+            $apart = apart::findOrFail($idApart);
+            /*$apart->articles()->wherePivot('size', $params->size)
+            ->detach($params->article_id);
+        }*/
+        $data = array(
+            'apart' => $apart,
+            'status'  => 'success',
+            'code'    => 200,
+        );
+        return response()->json($data, 200);
+    }
+
+    public function cleanApartClient($idApart, Request $request) {
+        $hash = $request->header('Authorization', null);
+        $jwtAuthAdmin = new jwtAuthAdmin();
+        $checkToken = $jwtAuthAdmin->checkToken($hash);
+        if ($checkToken) {
+            $clientApart = apart::where('id', $idApart)->update(['price' => 0]);
+            $data = array(
+                'clientApart' => $clientApart,
+                'status'  => 'success',
+                'code'    => 200,
+            );
+            $this->detachArrayProduct($idApart, $request);
+            return response()->json($data,200);
+        }
     }
 
    public function checkAmountProduct($sizeId, $productId) {
@@ -279,43 +316,6 @@ class apartController extends Controller
         }
         return response()->json($data,200);
     }
-
-    /*public function changeAmountProduct($idProduct, $sizeId,Request $request) {
-        $hash = $request->header('Authorization', null);
-        $jwtAuthAdmin = new jwtAuthAdmin();
-        $checkToken = $jwtAuthAdmin->checkToken($hash);
-        if ($checkToken) {
-            // recoger datos del POST
-            $json =  $request->input('json', null);
-            $params = json_decode($json);
-            $paramsArray = json_decode($json,true);
-            $arrayProduct = article::find($idProduct)->sizes()->get();
-            $countGetProduct = count($arrayProduct);
-            for ($i=0; $i < $countGetProduct; $i++) {
-                //return $sizeId;
-                if ($arrayProduct[$i]->pivot->size_id == $sizeId) {
-                    $arrayProduct[$i]->pivot->stock = $arrayProduct[$i]->pivot->stock - $params->amount;
-                    $size = size::find($arrayProduct[$i]->pivot->size_id);
-                    $product = article::find($arrayProduct[$i]->pivot->article_id);
-                    // modifica la cantidad del producto en la tabla pivote
-                    $product->sizes()->updateExistingPivot($size->id,['stock' => $arrayProduct[$i]->pivot->stock ]);
-                    $data = array(
-                        'article' => $product,
-                        'status'  => 'success',
-                        'code'    => 200,
-                    );
-                    return response()->json($data,200);
-                }
-            }
-        }else {
-            $data = array(
-                'mgs' => 'token invalido',
-                'status'  => 'fail',
-                'code'    => 400,
-            );
-        }
-        return response()->json($data,200);
-    }*/
 
     public function editApart(Request $request) {
         $hash = $request->header('Authorization', null);

@@ -51,8 +51,8 @@ class ArticleController extends Controller
 
     public function showPhotoProduct($id) {
         $articles = article::find($id);
-        $contents = Storage::get($articles->photo);
-        $articles->photo = base64_encode($contents);
+        /*$contents = Storage::get($articles->photo);
+        $articles->photo = base64_encode($contents);*/
         return response()->json(array(
             'productPhoto' => $articles->photo,
             'status'   => 'success'
@@ -141,10 +141,10 @@ class ArticleController extends Controller
         $productConcrete = DB::table('articles')->where('gender', $gender)
         ->where('department', $department)->where('tags_id', $tag)->get();
         $productCount = count($productConcrete);
-        for ($i=0; $i < $productCount ; $i++) {
+        /*for ($i=0; $i < $productCount ; $i++) {
             $contents = Storage::get($productConcrete[$i]->photo);
             $productConcrete[$i]->photo = base64_encode($contents);
-        }
+        }*/
         return response()->json(array(
             'articles' => $productConcrete,
             'status'   => 'success'
@@ -155,10 +155,10 @@ class ArticleController extends Controller
         $productConcrete = DB::table('articles')->where('gender', $gender)
         ->where('department', $department)->get();
         $productCount = count($productConcrete);
-        for ($i=0; $i < $productCount ; $i++) {
+        /*for ($i=0; $i < $productCount ; $i++) {
             $contents = Storage::get($productConcrete[$i]->photo);
             $productConcrete[$i]->photo = base64_encode($contents);
-        }
+        }*/
         return response()->json(array(
             'articles' => $productConcrete,
             'status'   => 'success'
@@ -169,12 +169,12 @@ class ArticleController extends Controller
         /*$productConcrete = DB::table('articles')->where('gender', $gender)
         ->where('department', $department)->paginate(12);*/
         $productConcrete = DB::table('articles')->where('gender', $gender)
-        ->where('department', $department)->paginate(5);
+        ->where('department', $department)->paginate(12);
         $productCount = count($productConcrete);
-        for ($i=0; $i < $productCount ; $i++) {
+        /*for ($i=0; $i < $productCount ; $i++) {
             $contents = Storage::get($productConcrete[$i]->photo);
             $productConcrete[$i]->photo = base64_encode($contents);
-        }
+        }*/
         return response()->json(array(
             'articles' => $productConcrete,
             'NextPaginate' => $productConcrete->nextPageUrl(),
@@ -232,7 +232,7 @@ class ArticleController extends Controller
             }
             $imgName = time() . $params->photo;
             // $resized_image = Image::make(base64_decode($img))->resize(500, 900)->stream('jpg', 90);
-            $resized_image = Image::make(base64_decode($img))->resize(500, 760)->stream('jpg', 100);
+            $resized_image = Image::make(base64_decode($img))->stream('jpg', 100);
             Storage::disk('local')->put($imgName, $resized_image);
             //guardar articulo
             $article = new article();
@@ -311,7 +311,7 @@ class ArticleController extends Controller
                 unset($paramsArray['created_at']);
                 unset($paramsArray['file']);
                 Storage::delete($imgDB->photo);
-                $resized_image = Image::make(base64_decode($img))->resize(500, 760)->stream('jpg', 100);
+                $resized_image = Image::make(base64_decode($img))->stream('jpg', 100);
                 Storage::disk('local')->put($imgName, $resized_image);
                 $article = article::where('id', $id)->update($paramsArray);
             }else {
@@ -346,142 +346,6 @@ class ArticleController extends Controller
 
         return response()->json($data, 200);
     }
-
-    /*public function store(Request $request) {
-        $hash = $request->header('Authorization', null);
-        $jwtAuthAdmin = new jwtAuthAdmin();
-        $checkToken = $jwtAuthAdmin->checkToken($hash);
-        if ($checkToken) {
-            // recoger datos del POST
-            $json =  $request->input('json', null);
-            $params = json_decode($json);
-            $paramsArray = json_decode($json,true);
-            //validacion
-            $validate = \Validator::make($paramsArray, [
-                'name'        => 'required',
-                'detail'      => 'required',
-                'pricePublic' => 'required',
-                'priceMajor'  => 'required',
-                'priceTuB'    => 'required',
-                'department'  => 'required',
-                'weight'      => 'required',
-                'photo'       => 'required',
-                'gender'      => 'required'
-            ]);
-            if ($validate->fails()) {
-                return response()->json($validate->errors(),400);
-            }
-            //añadir verificacion de guardado del producto antes que la imagen
-            $img =  $params->file;
-            $img = str_replace('data:image/jpeg;base64,', '', $img);
-            $img = str_replace(' ', '+', $img);
-            $imgName = time() . $params->photo;
-            Storage::disk('local')->put($imgName, base64_decode($img));
-            //guardar articulo
-            $article = new article();
-            $article->name         = $params->name;
-            $article->detail       = $params->detail;
-            $article->pricePublic  = $params->pricePublic;
-            $article->priceMajor   = $params->priceMajor;
-            $article->priceTuB     = $params->priceTuB;
-            $article->department   = $params->department;
-            $article->weight       = $params->weight;
-            $article->photo        = $imgName;
-            $article->gender       = $params->gender;
-            if ($params->tags_id != 0) {
-                $article->tags_id     = $params->tags_id;
-            }
-
-
-            $article->save();
-            $data = array(
-                'article' => $article ,
-                'status'  => 'success',
-                'code'    => 200,
-            );
-        } else {
-            // Error
-            $data = array(
-                'message' => 'login incorrecto',
-                'status' => 'Error',
-                'code'  => 400,
-            );
-        }
-        return response()->json($data, 200);
-    }
-
-    public function update($id, Request $request)
-    {
-        $hash = $request->header('Authorization', null);
-        $jwtAuthAdmin = new jwtAuthAdmin();
-        $checkToken = $jwtAuthAdmin->checkToken($hash);
-
-        if ($checkToken) {
-            $json = $request->input('json', null);
-            $params = json_decode($json);
-            $paramsArray = json_decode($json, true);
-            //validacion
-            $validate = Validator::make($paramsArray, [
-                'name'        => 'required',
-                'detail'      => 'required',
-                'pricePublic' => 'required',
-                'priceMajor'  => 'required',
-                'priceTuB'    => 'required',
-                'department'  => 'required',
-                'weight'      => 'required',
-                'photo'       => 'required',
-                'gender'      => 'required'
-            ]);
-            if ($validate->fails()) {
-                return response()->json($validate->errors(),400);
-            }
-
-            $imgDB = article::where('id', $id)->first();
-            $lengthImg = strlen($params->photo);
-            if ($lengthImg <= 100) {
-                $img =  $params->file;
-                $img = str_replace('data:image/jpeg;base64,', '', $img);
-                $img = str_replace(' ', '+', $img);
-                $imgName = time() . $params->photo;
-                $paramsArray['photo'] = $imgName;
-                unset($paramsArray['id']);
-                unset($paramsArray['created_at']);
-                unset($paramsArray['file']);
-                Storage::delete($imgDB->photo);
-                Storage::disk('local')->put($imgName, base64_decode($img));
-                $article = article::where('id', $id)->update($paramsArray);
-            }else {
-                $route = public_path().'\catalogo'.'\/';
-                $imgRoute = str_replace('/', '', $route);
-                $imgRoute = $imgRoute . $paramsArray['photo'];
-                Storage::delete($imgDB->photo);
-                $paramsArray['photo'] = time() .'.jpg';
-                $img = $paramsArray['file'];
-                $img = str_replace('data:image/jpeg;base64,', '', $img);
-                $img = str_replace(' ', '+', $img);
-                unset($paramsArray['id']);
-                unset($paramsArray['created_at']);
-                unset($paramsArray['file']);
-                Storage::disk('local')->put($paramsArray['photo'], base64_decode($img));
-                $article = article::where('id', $id)->update($paramsArray);
-            }
-            // Actualizar datos del articulo
-            $data = array(
-                'article' => $paramsArray,
-                'status'  => 'success',
-                'code'    => 200
-            );
-        } else {
-            //Error
-            $data = array(
-                'message' => 'login incorrecto',
-                'status' => 'Error',
-                'code'  => 400,
-            );
-        }
-
-        return response()->json($data, 200);
-    }*/
 
     public function destroy($id, Request $request){
 
