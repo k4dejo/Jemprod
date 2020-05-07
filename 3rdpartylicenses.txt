@@ -220,6 +220,8 @@ MIT
 ngx-file-drop
 MIT
 
+ngx-image-compress
+
 ngx-loading
 MIT
 The MIT License (MIT)
