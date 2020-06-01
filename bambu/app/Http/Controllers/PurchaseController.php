@@ -32,9 +32,10 @@ class PurchaseController extends Controller
     }
 
     public function getPurchaseStatus($status) {
-        $purchaseStatus = purchase::where('status', $status)->get();
+        $purchaseStatus = purchase::where('status', $status)->paginate(12);
         return response()->json(array(
             'purchases' => $purchaseStatus,
+            'NextPage' => $purchaseStatus->nextPageUrl(),
             'status'   => 'success'
         ), 200);
     }
@@ -81,7 +82,7 @@ class PurchaseController extends Controller
             $img = str_replace('data:image/jpeg;base64,', '', $img);
             $img = str_replace(' ', '+', $img);
             $imgName = time() . '.jpg';
-            Storage::disk('local')->put($imgName, base64_decode($img));
+            Storage::disk('public')->put($imgName, base64_decode($img));
             $ticket = new ticket();
             $ticket->ImgTicket = $imgName;
             $ticket->purcharse_id = $params->purchase_id;
@@ -474,20 +475,27 @@ class PurchaseController extends Controller
                     );
                 }
                 return response()->json($data,200);
-            }
+            } /*else {
+                $data = array(
+                    'sizeId' => $productSize[$i]->id,
+                    'sizeIdrequest' => $sizeIdResponse
+                );
+                return response()->json($data,200);
+            }*/
         }
        }
 
-    public function getClientInfo($idClient, $status) {
+    public function getClientInfo($idClient, $status, $idPurchase) {
         $purchaseClient = DB::table('purchases')->where('clients_id', $idClient)
         ->where('status', $status)->first();
-        $arrayPurchase = purchase::find($purchaseClient->id)->articles()->get();
+        //$arrayPurchase = purchase::find($purchaseClient->id)->articles()->get();
+        $arrayPurchase = purchase::find($idPurchase)->articles()->get();
         $infoClient = client::where('id', $idClient)->first();
-        $countPurchase = count($arrayPurchase);
+        /*$countPurchase = count($arrayPurchase);
         for ($i=0; $i < $countPurchase; $i++) {
             $contents = Storage::get($arrayPurchase[$i]->photo);
             $arrayPurchase[$i]->photo = base64_encode($contents);
-        }
+        }*/
         $data = array(
             'purchase'                 => $arrayPurchase,
             'clientName'               => $infoClient->name,
@@ -508,10 +516,10 @@ class PurchaseController extends Controller
         ->where('status', 'incomplete')->first();
         $arrayPurchase = purchase::find($purchaseClient->id)->articles()->get();
         $countPurchase = count($arrayPurchase);
-        for ($i=0; $i < $countPurchase; $i++) {
+        /*for ($i=0; $i < $countPurchase; $i++) {
             $contents = Storage::get($arrayPurchase[$i]->photo);
             $arrayPurchase[$i]->photo = base64_encode($contents);
-        }
+        }*/
         if ($purchaseClient->addresspurchases_id == null) {
             $purchaseClient->addresspurchases_id = '0';
         }

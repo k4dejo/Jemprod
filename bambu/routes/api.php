@@ -58,6 +58,7 @@ Route::group(['middleware' => 'cors'], function(){
    Route::post('detachRelation', 'sizeController@detachRelation');
    Route::put('updateSizeAmountProduct/{id}', 'sizeController@changeAmountProduct');
    Route::get('getTalla/{id}','sizeController@showSizeP');
+   Route::get('getSizesForDepart/{gender}/{department}','sizeController@getSizesForDepart');
    Route::get('getTallaEdit/{id}','sizeController@showEditP');
    Route::delete('deleteTalla/{id}','sizeController@detachSize');
    /**/
@@ -97,7 +98,8 @@ Route::group(['middleware' => 'cors'], function(){
    Route::get('getTicket/{id}', 'PurchaseController@getTicket');
    Route::get('getHistoryPurchaseClient/{id}', 'PurchaseController@getProductHistory');
    Route::get('getStatusPurchase/{id}', 'PurchaseController@getPurchaseStatus');
-   Route::get('getClientInfoPurchase/{id}/{status}', 'PurchaseController@getClientInfo');
+   Route::get('getClientInfoPurchase/{id}/{status}/{idPurchase}',
+   'PurchaseController@getClientInfo');
    Route::get('compareAmountSizePurchase/{sizeId}/{idProduct}/{amountCompare}',
    'PurchaseController@compareAmountSizePurchase');
    Route::get('getProductPurchaseHistory/{id}', 'PurchaseController@ProductListHistoryOrder');
@@ -132,14 +134,18 @@ Route::group(['middleware' => 'cors'], function(){
    Route::get('getConcreteProduct/{id}/{gender}', 'ArticleController@getConcreteProduct');
    Route::get('getproductGender/{id}', 'ArticleController@getProductGender');
    Route::get('showPhotoProduct/{id}', 'ArticleController@showPhotoProduct');
+   Route::get('showForClients/{id}', 'ArticleController@showForClients');
    Route::get('getListProduct/{id}/{gender}', 'ArticleController@getListProduct');
+   Route::get('Onlydepart/{gender}/{department}', 'ArticleController@Onlydepart');
    Route::get('filterPriceProduct/{department}/{priceMin}/{priceMax}', 'ArticleController@filterPriceProduct');
-   Route::get('filterSizeProduct/{department}/{gender}/{size}', 'ArticleController@filterSizeProduct');
+   Route::get('filterSizeProductAdmin/{department}/{gender}/{size}', 'ArticleController@filterSizeProductAdmin');
+   Route::get('filterSizeProduct/{department}/{gender}/{size}/{tagsId}', 'ArticleController@filterSizeProduct');
    /*tags*/
    Route::post('storeTag', 'tagController@store');
    Route::get('getAllTags', 'tagController@index');
-   Route::delete('deleteTag/{id}','tagController@deleteTag');
+   Route::get('getTagsForDeparment/{department}/{gender}', 'tagController@getTagsForDeparment');
    Route::get('filterTagProduct/{department}/{gender}/{tag}', 'ArticleController@filterTagProduct');
+   Route::delete('deleteTag/{id}','tagController@deleteTag');
    /**/
 
    /*ADDRESS*/

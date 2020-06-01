@@ -10,37 +10,13 @@ use Input;
 use Image;
 use App\outfit;
 use App\size;
+use App\apart;
+use App\billing;
+use App\purchase;
 class ArticleController extends Controller
 {
 
-    /*public function index(Request $request)
-    {
-       //listado de los articulos
-        $articles = article::all();
-        $productCount = count($articles);
-        if ($productCount <= 0) {
-            return response()->json(array(
-                'articles' => $articles,
-                'status'   => 'void'
-            ), 200);
-        }
-        if ($productCount > 1) {
-            for ($i=0; $i < $productCount ; $i++) {
-                $contents = Storage::get($articles[$i]->photo);
-                $articles[$i]->photo = base64_encode($contents);
-            }
-        }else{
-            $contents = Storage::get($articles[0]->photo);
-            $articles[0]->photo = base64_encode($contents);
-        }
-        return response()->json(array(
-            'articles' => $articles,
-            'status'   => 'success'
-        ), 200);
-    }*/
-
-    public function index(Request $request)
-    {
+    public function index(Request $request) {
        //listado de los articulos
         $articles = article::all();
         return response()->json(array(
@@ -51,8 +27,6 @@ class ArticleController extends Controller
 
     public function showPhotoProduct($id) {
         $articles = article::find($id);
-        /*$contents = Storage::get($articles->photo);
-        $articles->photo = base64_encode($contents);*/
         return response()->json(array(
             'productPhoto' => $articles->photo,
             'status'   => 'success'
@@ -63,8 +37,18 @@ class ArticleController extends Controller
     {
         $articles = article::find($id);
         $arrayArticle = article::find($id)->sizes()->get();
-        $contents = Storage::get($articles->photo);
-        $articles->photo = base64_encode($contents);
+        return response()->json(array(
+            'articles' => $articles,
+            'arraySizeArticle' => $arrayArticle,
+            'status'   => 'success'
+        ), 200);
+    }
+
+    public function showForClients($id)
+    {
+        $articles = article::find($id);
+        //$arrayArticle = article::find($id)->first()->with('sizes');
+        $arrayArticle = article::find($id)->sizes()->get();
         return response()->json(array(
             'articles' => $articles,
             'arraySizeArticle' => $arrayArticle,
@@ -108,12 +92,12 @@ class ArticleController extends Controller
         ), 200);
     }
 
-    public function filterSizeProduct($department, $gender, $size) {
+    public function filterSizeProductAdmin($department, $gender, $size) {
         $size2 = $size;
         $filter = article::whereHas('sizes', function($q) use ($size) {
             $q->where('size', '=', $size);
         })->where('gender', '=', $gender)
-        ->where('department', '=', $department)->get();
+        ->where('department', '=', $department)->with('sizes')->get();
         $productCount = count($filter);
         if ($productCount <= 0) {
             return response()->json(array(
@@ -121,75 +105,87 @@ class ArticleController extends Controller
                 'status'   => 'void'
             ), 200);
         }
-        if ($productCount > 1) {
-            for ($i=0; $i < $productCount ; $i++) {
-                $contents = Storage::get($filter[$i]->photo);
-                $filter[$i]->photo = base64_encode($contents);
-            }
-        }else{
-            $contents = Storage::get($filter[0]->photo);
-            $filter[0]->photo = base64_encode($contents);
+        return response()->json(array(
+            'filter'   => $filter,
+            'status'   => 'success'
+        ), 200);
+    }
+
+    public function filterSizeProduct($department, $gender, $size, $tagsId) {
+        $size2 = $size;
+        if ($tagsId != 0) {
+            $filter = article::whereHas('sizes', function($q) use ($size) {
+                $q->where('size', '=', $size);
+            })->where('gender', '=', $gender)
+            ->where('tags_id', $tagsId)
+            ->where('department', '=', $department)->with('sizes')->paginate(12);
+        } else {
+            $filter = article::whereHas('sizes', function($q) use ($size) {
+                $q->where('size', '=', $size);
+            })->where('gender', '=', $gender)
+            ->where('department', '=', $department)->with('sizes')->paginate(12);
+        }
+        $productCount = count($filter);
+        if ($productCount <= 0) {
+            return response()->json(array(
+                'filter' => $filter,
+                'status'   => 'void'
+            ), 200);
         }
         return response()->json(array(
-            'filter'         => $filter,
+            'filter'   => $filter,
+            'NextPaginate' => $filter->nextPageUrl(),
             'status'   => 'success'
         ), 200);
     }
 
 
     public function filterTagProduct($department, $gender, $tag) {
-        $productConcrete = DB::table('articles')->where('gender', $gender)
-        ->where('department', $department)->where('tags_id', $tag)->get();
+        $productConcrete = article::where('gender', $gender)
+        ->where('department', $department)->where('tags_id', $tag)->with('sizes')->paginate(12);
         $productCount = count($productConcrete);
-        /*for ($i=0; $i < $productCount ; $i++) {
-            $contents = Storage::get($productConcrete[$i]->photo);
-            $productConcrete[$i]->photo = base64_encode($contents);
-        }*/
-        return response()->json(array(
-            'articles' => $productConcrete,
-            'status'   => 'success'
-        ), 200);
-    }
-
-    public function getConcreteProduct($department, $gender) {
-        $productConcrete = DB::table('articles')->where('gender', $gender)
-        ->where('department', $department)->get();
-        $productCount = count($productConcrete);
-        /*for ($i=0; $i < $productCount ; $i++) {
-            $contents = Storage::get($productConcrete[$i]->photo);
-            $productConcrete[$i]->photo = base64_encode($contents);
-        }*/
-        return response()->json(array(
-            'articles' => $productConcrete,
-            'status'   => 'success'
-        ), 200);
-    }
-
-    public function getListProduct($department, $gender) {
-        /*$productConcrete = DB::table('articles')->where('gender', $gender)
-        ->where('department', $department)->paginate(12);*/
-        $productConcrete = DB::table('articles')->where('gender', $gender)
-        ->where('department', $department)->paginate(12);
-        $productCount = count($productConcrete);
-        /*for ($i=0; $i < $productCount ; $i++) {
-            $contents = Storage::get($productConcrete[$i]->photo);
-            $productConcrete[$i]->photo = base64_encode($contents);
-        }*/
         return response()->json(array(
             'articles' => $productConcrete,
             'NextPaginate' => $productConcrete->nextPageUrl(),
             'status'   => 'success'
         ), 200);
+    }
 
+    public function getConcreteProduct($department, $gender) {
+        $productConcrete = article::where('gender', $gender)
+        ->where('department', $department)->with('sizes')->paginate(12);
+        //$productCount = count($productConcrete);
+        return response()->json(array(
+            'articles' => $productConcrete,
+            'NextPaginate' => $productConcrete->nextPageUrl(),
+            'status'   => 'success'
+        ), 200);
+    }
+
+    public function getListProduct($department, $gender) {
+        $productListEloquent = article::where('department', $department)->where('gender', $gender)
+        ->with('sizes')->paginate(12);
+        return response()->json(array(
+            'articles' => $productListEloquent,
+            'NextPaginate' => $productListEloquent->nextPageUrl(),
+            'status'   => 'success'
+        ), 200);
+    }
+
+    public function Onlydepart($gender, $department) {
+        //$dptGet = article::where('gender', $gender)->where('department', $department)->get();
+        $dptGet = DB::table('articles')->where('department', $department)
+        ->get();
+        return response()->json(array(
+            'articles' => $dptGet,
+            'department' => $department,
+            'status'   => 'success'
+        ), 200);
     }
 
     public function getProductGender($gender) {
         $productGen = article::where('gender', '=', $gender)->get();
         $productCount = count($productGen);
-        for ($i=0; $i < $productCount ; $i++) {
-            $contents = Storage::get($productGen[$i]->photo);
-            $productGen[$i]->photo = base64_encode($contents);
-        }
         return response()->json(array(
             'articles' => $productGen,
             'status'   => 'success'
@@ -233,7 +229,7 @@ class ArticleController extends Controller
             $imgName = time() . $params->photo;
             // $resized_image = Image::make(base64_decode($img))->resize(500, 900)->stream('jpg', 90);
             $resized_image = Image::make(base64_decode($img))->stream('jpg', 100);
-            Storage::disk('local')->put($imgName, $resized_image);
+            Storage::disk('public')->put($imgName, $resized_image);
             //guardar articulo
             $article = new article();
             $article->name         = $params->name;
@@ -295,39 +291,46 @@ class ArticleController extends Controller
 
             $imgDB = article::where('id', $id)->first();
             $lengthImg = strlen($params->photo);
-            if ($lengthImg <= 100) {
-                $img =  $params->file;
-                $isWebP = explode(';', $img);
-                if ($isWebP[0] === "data:image/webp") {
-                    $img = str_replace('data:image/webp;base64,', '', $img);
-                    $img = str_replace(' ', '+', $img);
-                } else {
+            $isWeb = explode(':', $params->photo);
+            if ($isWeb[0] == 'https') {
+                $imgName = time() . $params->photo;
+                unset($paramsArray['id']);
+                unset($paramsArray['created_at']);
+                unset($paramsArray['file']);
+                unset($paramsArray['photo']);
+                /*\Storage::delete($imgDB->photo);
+                $resized_image = Image::make(base64_decode($img))->stream('jpg', 100);
+                \Storage::disk('public')->put($imgName, $resized_image);*/
+                $article = article::where('id', $id)->update($paramsArray);
+            } else {
+                if ($lengthImg <= 100) {
+                    $img =  $params->file;
                     $img = str_replace('data:image/jpeg;base64,', '', $img);
                     $img = str_replace(' ', '+', $img);
+                    $imgName = time() . $params->photo;
+                    $paramsArray['photo'] = $imgName;
+                    unset($paramsArray['id']);
+                    unset($paramsArray['created_at']);
+                    unset($paramsArray['file']);
+                    Storage::delete($imgDB->photo);
+                    $resized_image = Image::make(base64_decode($img))->stream('jpg', 100);
+                    Storage::disk('public')->put($imgName, $resized_image);
+                    $article = article::where('id', $id)->update($paramsArray);
+                }else {
+                    $route = public_path().'\catalogo'.'\/';
+                    $imgRoute = str_replace('/', '', $route);
+                    $imgRoute = $imgRoute . $paramsArray['photo'];
+                    Storage::delete($imgDB->photo);
+                    $paramsArray['photo'] = time() .'.jpg';
+                    $img = $paramsArray['file'];
+                    $img = str_replace('data:image/jpeg;base64,', '', $img);
+                    $img = str_replace(' ', '+', $img);
+                    unset($paramsArray['id']);
+                    unset($paramsArray['created_at']);
+                    unset($paramsArray['file']);
+                    Storage::disk('public')->put($paramsArray['photo'], base64_decode($img));
+                    $article = article::where('id', $id)->update($paramsArray);
                 }
-                $imgName = time() . $params->photo;
-                $paramsArray['photo'] = $imgName;
-                unset($paramsArray['id']);
-                unset($paramsArray['created_at']);
-                unset($paramsArray['file']);
-                Storage::delete($imgDB->photo);
-                $resized_image = Image::make(base64_decode($img))->stream('jpg', 100);
-                Storage::disk('local')->put($imgName, $resized_image);
-                $article = article::where('id', $id)->update($paramsArray);
-            }else {
-                $route = public_path().'\catalogo'.'\/';
-                $imgRoute = str_replace('/', '', $route);
-                $imgRoute = $imgRoute . $paramsArray['photo'];
-                Storage::delete($imgDB->photo);
-                $paramsArray['photo'] = time() .'.jpg';
-                $img = $paramsArray['file'];
-                $img = str_replace('data:image/jpeg;base64,', '', $img);
-                $img = str_replace(' ', '+', $img);
-                unset($paramsArray['id']);
-                unset($paramsArray['created_at']);
-                unset($paramsArray['file']);
-                Storage::disk('local')->put($paramsArray['photo'], base64_decode($img));
-                $article = article::where('id', $id)->update($paramsArray);
             }
             // Actualizar datos del articulo
             $data = array(
