@@ -18,12 +18,21 @@ class ArticleController extends Controller
 
     public function index(Request $request) {
        //listado de los articulos
-        $articles = article::all();
+       $articles = article::with('sizes')->get(); 
         return response()->json(array(
             'articles' => $articles,
             'status'   => 'success'
         ), 200);
     }
+
+    public function getAllProduct(Request $request) {
+        //listado de los articulos
+         $articles = article::all()->with('sizes');
+         return response()->json(array(
+             'articles' => $articles,
+             'status'   => 'success'
+         ), 200);
+     }
 
     public function showPhotoProduct($id) {
         $articles = article::find($id);
