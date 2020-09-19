@@ -74,10 +74,22 @@ Route::group(['middleware' => 'cors'], function(){
    Route::get('getFavoriteList/{idClient}', 'favoriteController@showFavoriteList');
    /**/
 
+   /*REPORTS*/
+   Route::get('calculatePriceAllStock', 'ArticleController@calculatePriceAllStock');
+   Route::get('calculatePriceGender/{gender}', 'ArticleController@calculatePriceGender');
+   Route::get('caculatePriceTags/{tagsId}', 'ArticleController@caculatePriceTags');
+   Route::get('calculatePriceDepartment/{gender}/{dpt}', 'ArticleController@calculatePriceDepartment');
+
+   //APARTS REPORTS
+   Route::get('getAllApart', 'apartController@getAllApart');
+   /**/
+
    /*IMAGE*/
    Route::post('addMimage','imageController@store');
    Route::post('deleteArrayImg/{id}', 'imageController@deleteImg');
    Route::get('getImages/{id}','imageController@show');
+   Route::get('getListImages','imageController@getAllImages');
+   Route::get('downloadImage','imageController@downloadImage');
    Route::delete('deleteImg/{id}','imageController@destroy');
    /**/
 
@@ -144,7 +156,7 @@ Route::group(['middleware' => 'cors'], function(){
    Route::post('storeTag', 'tagController@store');
    Route::get('getAllTags', 'tagController@index');
    Route::get('getTagsForDeparment/{department}/{gender}', 'tagController@getTagsForDeparment');
-   Route::get('filterTagProduct/{department}/{gender}/{tag}', 'ArticleController@filterTagProduct');
+   Route::get('filterTagProduct/{department}/{gender}/{tag}/{size}', 'ArticleController@filterTagProduct');
    Route::delete('deleteTag/{id}','tagController@deleteTag');
    /**/
 

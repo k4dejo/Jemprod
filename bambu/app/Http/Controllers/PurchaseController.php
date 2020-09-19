@@ -32,7 +32,7 @@ class PurchaseController extends Controller
     }
 
     public function getPurchaseStatus($status) {
-        $purchaseStatus = purchase::where('status', $status)->paginate(12);
+        $purchaseStatus = purchase::where('status', $status)->with('articles')->paginate(12);
         return response()->json(array(
             'purchases' => $purchaseStatus,
             'NextPage' => $purchaseStatus->nextPageUrl(),
@@ -410,8 +410,10 @@ class PurchaseController extends Controller
     }
 
     public function getProductHistory($idClient) {
-        $purchaseClient = DB::table('purchases')->where('clients_id', $idClient)
-        ->where('status', '!=','incomplete')->get();
+        /*$purchaseClient = DB::table('purchases')->where('clients_id', $idClient)
+        ->where('status', '!=','incomplete')->get();*/
+        $purchaseClient = purchase::where('clients_id', $idClient)
+        ->where('status', 'procesando')->with('articles')->get();
         $data = array(
             'purchase'                 => $purchaseClient,
             'status'                   => 'success',
@@ -424,10 +426,10 @@ class PurchaseController extends Controller
     public function ProductListHistoryOrder($idPurchase) {
         $arrayPurchase = purchase::find($idPurchase)->articles()->get();
         $countPurchase = count($arrayPurchase);
-        for ($i=0; $i < $countPurchase; $i++) {
+        /*for ($i=0; $i < $countPurchase; $i++) {
             $contents = Storage::get($arrayPurchase[$i]->photo);
             $arrayPurchase[$i]->photo = base64_encode($contents);
-        }
+        }*/
         $data = array(
             'productlist'                 => $arrayPurchase,
             'status'                   => 'success',
@@ -456,6 +458,15 @@ class PurchaseController extends Controller
         $productSize = article::find($productId)->sizes()->get();
         $countGetProduct = count($productSize);
         $sizeIdResponse = $this->checkSizeIdPurchase($productId, $sizeId);
+        if ($sizeIdResponse == 'Error') {
+            $data = array(
+                'sizeId' => $productId,
+                'amountCheck' => 'void',
+                'status'  => 'success',
+                'code'    => 200,
+            );
+            return response()->json($data,200);
+        }
         for ($i=0; $i < $countGetProduct; $i++) {
             if ($productSize[$i]->id == $sizeIdResponse) {
                 if ($productSize[$i]->pivot->stock >= $amountCompare) {
@@ -483,19 +494,13 @@ class PurchaseController extends Controller
                 return response()->json($data,200);
             }*/
         }
-       }
+    }
 
     public function getClientInfo($idClient, $status, $idPurchase) {
         $purchaseClient = DB::table('purchases')->where('clients_id', $idClient)
         ->where('status', $status)->first();
-        //$arrayPurchase = purchase::find($purchaseClient->id)->articles()->get();
         $arrayPurchase = purchase::find($idPurchase)->articles()->get();
         $infoClient = client::where('id', $idClient)->first();
-        /*$countPurchase = count($arrayPurchase);
-        for ($i=0; $i < $countPurchase; $i++) {
-            $contents = Storage::get($arrayPurchase[$i]->photo);
-            $arrayPurchase[$i]->photo = base64_encode($contents);
-        }*/
         $data = array(
             'purchase'                 => $arrayPurchase,
             'clientName'               => $infoClient->name,
