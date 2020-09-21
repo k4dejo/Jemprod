@@ -18,21 +18,12 @@ class ArticleController extends Controller
 
     public function index(Request $request) {
        //listado de los articulos
-       $articles = article::with('sizes')->get(); 
+        $articles = article::all();
         return response()->json(array(
             'articles' => $articles,
             'status'   => 'success'
         ), 200);
     }
-
-    public function getAllProduct(Request $request) {
-        //listado de los articulos
-         $articles = article::all()->with('sizes');
-         return response()->json(array(
-             'articles' => $articles,
-             'status'   => 'success'
-         ), 200);
-     }
 
     public function showPhotoProduct($id) {
         $articles = article::find($id);
@@ -49,6 +40,87 @@ class ArticleController extends Controller
         return response()->json(array(
             'articles' => $articles,
             'arraySizeArticle' => $arrayArticle,
+            'status'   => 'success'
+        ), 200);
+    }
+
+    public function calculatePriceAllStock() {
+        $products = article::with('sizes')->get();
+        $totalPrice = 0;
+        $totalStock = 0;
+        $productsLength =  count($products);
+        for ($i=0; $i < $productsLength; $i++) {
+            $countSizes = count($products[$i]->sizes);
+            for ($index=0; $index < $countSizes; $index++) {
+                $totalStock += $products[$i]->sizes[$index]->pivot->stock;
+                $totalPrice += $products[$i]->priceMajor * $products[$i]->sizes[$index]->pivot->stock;
+            }
+        }
+        return response()->json(array(
+            'totalPrice'    => $totalPrice,
+            'totalStock'    => $totalStock,
+            'status'   => 'success'
+        ), 200);
+    }
+
+    public function caculatePriceTags($tagsId) {
+        $products = article::where('tags_id', $tagsId)->with('sizes')->get();
+        $totalPrice = 0;
+        $totalStock = 0;
+        $productsLength =  count($products);
+        for ($i=0; $i < $productsLength; $i++) {
+            $countSizes = count($products[$i]->sizes);
+            for ($index=0; $index < $countSizes; $index++) {
+                $totalStock += $products[$i]->sizes[$index]->pivot->stock;
+                $totalPrice += $products[$i]->priceMajor * $products[$i]->sizes[$index]->pivot->stock;
+            }
+        }
+        return response()->json(array(
+            'Tags'          => $tagsId,
+            'totalPrice'    => $totalPrice,
+            'totalStock'    => $totalStock,
+            'status'   => 'success'
+        ), 200);
+
+    }
+
+    public function calculatePriceDepartment($gender, $department) {
+        $products = article::where('gender', $gender)
+        ->where('department', $department)->with('sizes')->get();
+        $totalPrice = 0;
+        $totalStock = 0;
+        $productsLength =  count($products);
+        for ($i=0; $i < $productsLength; $i++) {
+            $countSizes = count($products[$i]->sizes);
+            for ($index=0; $index < $countSizes; $index++) {
+                $totalStock += $products[$i]->sizes[$index]->pivot->stock;
+                $totalPrice += $products[$i]->priceMajor * $products[$i]->sizes[$index]->pivot->stock;
+            }
+        }
+        return response()->json(array(
+            'gender'        => $gender,
+            'totalPrice'    => $totalPrice,
+            'totalStock'    => $totalStock,
+            'status'   => 'success'
+        ), 200);
+    }
+
+    public function calculatePriceGender($gender) {
+        $products = article::where('gender', $gender)->with('sizes')->get();
+        $totalPrice = 0;
+        $totalStock = 0;
+        $productsLength =  count($products);
+        for ($i=0; $i < $productsLength; $i++) {
+            $countSizes = count($products[$i]->sizes);
+            for ($index=0; $index < $countSizes; $index++) {
+                $totalStock += $products[$i]->sizes[$index]->pivot->stock;
+                $totalPrice += $products[$i]->priceMajor * $products[$i]->sizes[$index]->pivot->stock;
+            }
+        }
+        return response()->json(array(
+            'gender'        => $gender,
+            'totalPrice'    => $totalPrice,
+            'totalStock'    => $totalStock,
             'status'   => 'success'
         ), 200);
     }
@@ -103,6 +175,11 @@ class ArticleController extends Controller
 
     public function filterSizeProductAdmin($department, $gender, $size) {
         $size2 = $size;
+        $isWeb = explode('-', $size);
+        $countSizes = count($isWeb);
+        if($countSizes > 1) {
+          $size = $isWeb[0] . '/' . $isWeb[1];
+        }
         $filter = article::whereHas('sizes', function($q) use ($size) {
             $q->where('size', '=', $size);
         })->where('gender', '=', $gender)
@@ -125,14 +202,16 @@ class ArticleController extends Controller
         if ($tagsId != 0) {
             $filter = article::whereHas('sizes', function($q) use ($size) {
                 $q->where('size', '=', $size);
+                $q->where('stock', '>', 0);
             })->where('gender', '=', $gender)
             ->where('tags_id', $tagsId)
-            ->where('department', '=', $department)->with('sizes')->paginate(12);
+            ->where('department', '=', $department)->with('sizes')->get();
         } else {
             $filter = article::whereHas('sizes', function($q) use ($size) {
                 $q->where('size', '=', $size);
+                $q->where('stock', '>', 0);
             })->where('gender', '=', $gender)
-            ->where('department', '=', $department)->with('sizes')->paginate(12);
+            ->where('department', '=', $department)->with('sizes')->get();
         }
         $productCount = count($filter);
         if ($productCount <= 0) {
@@ -143,48 +222,53 @@ class ArticleController extends Controller
         }
         return response()->json(array(
             'filter'   => $filter,
-            'NextPaginate' => $filter->nextPageUrl(),
+            //'NextPaginate' => $filter->nextPageUrl(),
             'status'   => 'success'
         ), 200);
     }
 
 
-    public function filterTagProduct($department, $gender, $tag) {
-        $productConcrete = article::where('gender', $gender)
-        ->where('department', $department)->where('tags_id', $tag)->with('sizes')->paginate(12);
-        $productCount = count($productConcrete);
+    public function filterTagProduct($department, $gender, $tag, $size) {
+        if ($size != '') {
+            $filter = article::whereHas('sizes', function($q) use ($size) {
+                $q->where('size', '=', $size);
+                $q->where('stock', '>', 0);
+            })->where('gender', '=', $gender)
+            ->where('tags_id', $tag)
+            ->where('department', '=', $department)->with('sizes')->get();
+        }else {
+            $filter = article::where('gender', $gender)
+            ->where('department', $department)->where('tags_id', $tag)->with('sizes')->get();
+        }
+        $productCount = count($filter);
         return response()->json(array(
-            'articles' => $productConcrete,
-            'NextPaginate' => $productConcrete->nextPageUrl(),
+            'articles' => $filter,
             'status'   => 'success'
         ), 200);
     }
 
     public function getConcreteProduct($department, $gender) {
         $productConcrete = article::where('gender', $gender)
-        ->where('department', $department)->with('sizes')->paginate(12);
-        //$productCount = count($productConcrete);
+        ->where('department', $department)->with('sizes')->get();
         return response()->json(array(
             'articles' => $productConcrete,
-            'NextPaginate' => $productConcrete->nextPageUrl(),
             'status'   => 'success'
         ), 200);
     }
 
     public function getListProduct($department, $gender) {
         $productListEloquent = article::where('department', $department)->where('gender', $gender)
-        ->with('sizes')->paginate(12);
+        ->has('sizes')->with('sizes')->get();
         return response()->json(array(
             'articles' => $productListEloquent,
-            'NextPaginate' => $productListEloquent->nextPageUrl(),
+            //'NextPaginate' => $productListEloquent->nextPageUrl(),
             'status'   => 'success'
         ), 200);
     }
 
     public function Onlydepart($gender, $department) {
-        //$dptGet = article::where('gender', $gender)->where('department', $department)->get();
-        $dptGet = DB::table('articles')->where('department', $department)
-        ->get();
+        $dptGet = article::where('gender', $gender)->where('department', $department)->get();
+        // $dptGet = DB::table('articles')->where('department', $department)->get();
         return response()->json(array(
             'articles' => $dptGet,
             'department' => $department,
@@ -236,9 +320,11 @@ class ArticleController extends Controller
                 $img = str_replace(' ', '+', $img);
             }
             $imgName = time() . $params->photo;
-            // $resized_image = Image::make(base64_decode($img))->resize(500, 900)->stream('jpg', 90);
-            $resized_image = Image::make(base64_decode($img))->stream('jpg', 100);
-            Storage::disk('public')->put($imgName, $resized_image);
+            //$resized_image = Image::make(base64_decode($img))->stream('jpg', 100);
+            $base = base64_decode($img);
+            $imgConvert = Image::make($base)->encode('jpg', 100);
+            Storage::disk('public')->put($imgName, $imgConvert);
+            //Storage::disk('public')->put($imgName, base64_decode($img));
             //guardar articulo
             $article = new article();
             $article->name         = $params->name;
@@ -253,7 +339,6 @@ class ArticleController extends Controller
             if ($params->tags_id != 0) {
                 $article->tags_id     = $params->tags_id;
             }
-
 
             $article->save();
             $data = array(
@@ -322,8 +407,8 @@ class ArticleController extends Controller
                     unset($paramsArray['created_at']);
                     unset($paramsArray['file']);
                     Storage::delete($imgDB->photo);
-                    $resized_image = Image::make(base64_decode($img))->stream('jpg', 100);
-                    Storage::disk('public')->put($imgName, $resized_image);
+                    // $resized_image = Image::make(base64_decode($img))->stream('jpg', 100);
+                    Storage::disk('public')->put($imgName,base64_decode($img));
                     $article = article::where('id', $id)->update($paramsArray);
                 }else {
                     $route = public_path().'\catalogo'.'\/';
@@ -368,7 +453,15 @@ class ArticleController extends Controller
         $imgRoute = str_replace('/', '', $route);
         $imgRoute = $imgRoute . $article->photo;
         Storage::delete($article->photo);
+        $article->apart()->sync([]);
+        $article->purchases()->update(['article_id' => null]);
+        $article->clients()->detach($id);
+        $article->billing()->sync([]);
+        $article->billing()->sync([]);
+        $article->outfit()->sync([]);
+        $article->sizes()->sync([]);
         $article->delete();
+
         $data = array(
             'article' => $article,
             'status'  => 'success',
