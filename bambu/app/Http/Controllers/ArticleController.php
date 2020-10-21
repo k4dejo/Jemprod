@@ -229,7 +229,7 @@ class ArticleController extends Controller
 
 
     public function filterTagProduct($department, $gender, $tag, $size) {
-        if ($size != '') {
+        if ($size != 'void') {
             $filter = article::whereHas('sizes', function($q) use ($size) {
                 $q->where('size', '=', $size);
                 $q->where('stock', '>', 0);
@@ -240,6 +240,7 @@ class ArticleController extends Controller
             $filter = article::where('gender', $gender)
             ->where('department', $department)->where('tags_id', $tag)->with('sizes')->get();
         }
+        return $filter;
         $productCount = count($filter);
         return response()->json(array(
             'articles' => $filter,
@@ -262,6 +263,14 @@ class ArticleController extends Controller
         return response()->json(array(
             'articles' => $productListEloquent,
             //'NextPaginate' => $productListEloquent->nextPageUrl(),
+            'status'   => 'success'
+        ), 200);
+    }
+
+    public function getNewness() {
+        $newness = article::orderBy('created_at', 'DESC')->take(10)->get();
+        return response()->json(array(
+            'newness' => $newness,
             'status'   => 'success'
         ), 200);
     }
@@ -336,6 +345,8 @@ class ArticleController extends Controller
             $article->weight       = $params->weight;
             $article->photo        = $imgName;
             $article->gender       = $params->gender;
+            $article->gender_id    = $params->gender;
+            $article->dpt_id       = $params->department;
             if ($params->tags_id != 0) {
                 $article->tags_id     = $params->tags_id;
             }

@@ -154,12 +154,19 @@ Route::group(['middleware' => 'cors'], function(){
    Route::get('filterPriceProduct/{department}/{priceMin}/{priceMax}', 'ArticleController@filterPriceProduct');
    Route::get('filterSizeProductAdmin/{department}/{gender}/{size}', 'ArticleController@filterSizeProductAdmin');
    Route::get('filterSizeProduct/{department}/{gender}/{size}/{tagsId}', 'ArticleController@filterSizeProduct');
+   Route::get('getNewness', 'ArticleController@getNewness');
    /*tags*/
    Route::post('storeTag', 'tagController@store');
    Route::get('getAllTags', 'tagController@index');
    Route::get('getTagsForDeparment/{department}/{gender}', 'tagController@getTagsForDeparment');
    Route::get('filterTagProduct/{department}/{gender}/{tag}/{size}', 'ArticleController@filterTagProduct');
    Route::delete('deleteTag/{id}','tagController@deleteTag');
+   /**/
+
+   /*GENDER*/
+    Route::resource('Genders', 'GenderController');
+   /*DEPARMENT*/
+    Route::resource('departments', 'DepartmentController');
    /**/
 
    /*ADDRESS*/
