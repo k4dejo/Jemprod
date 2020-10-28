@@ -18,7 +18,19 @@ class ArticleController extends Controller
 
     public function index(Request $request) {
        //listado de los articulos
-        $articles = article::all();
+       $articles = article::with(['gender'])->with(['department'])->get();
+       // $articles = article::all();
+       $countProducts = count($articles);
+       for ($i=0; $i < $countProducts; $i++) {
+           if ($articles[$i]->gender_id == null && $articles[$i]->dpt_id == null) {
+               $articles[$i]->gender_id = $articles[$i]->gender;
+               $articles[$i]->dpt_id = $articles[$i]->department;
+               $article = article::where('id', $articles[$i]->id)->update([
+                'gender_id' => intval($articles[$i]->gender),
+                'dpt_id' => intval($articles[$i]->department)
+                ]);
+           }
+        }
         return response()->json(array(
             'articles' => $articles,
             'status'   => 'success'
@@ -36,9 +48,13 @@ class ArticleController extends Controller
     public function show($id)
     {
         $articles = article::find($id);
+        $productGender = article::find($id)->gender()->get();
+        $productDepartment = article::find($id)->department()->get();
         $arrayArticle = article::find($id)->sizes()->get();
         return response()->json(array(
             'articles' => $articles,
+            'gender'   => $productGender,
+            'department'   => $productDepartment,
             'arraySizeArticle' => $arrayArticle,
             'status'   => 'success'
         ), 200);
@@ -229,7 +245,7 @@ class ArticleController extends Controller
 
 
     public function filterTagProduct($department, $gender, $tag, $size) {
-        if ($size != '') {
+        if ($size != 'void') {
             $filter = article::whereHas('sizes', function($q) use ($size) {
                 $q->where('size', '=', $size);
                 $q->where('stock', '>', 0);
@@ -240,6 +256,7 @@ class ArticleController extends Controller
             $filter = article::where('gender', $gender)
             ->where('department', $department)->where('tags_id', $tag)->with('sizes')->get();
         }
+        return $filter;
         $productCount = count($filter);
         return response()->json(array(
             'articles' => $filter,
@@ -258,10 +275,18 @@ class ArticleController extends Controller
 
     public function getListProduct($department, $gender) {
         $productListEloquent = article::where('department', $department)->where('gender', $gender)
-        ->has('sizes')->with('sizes')->get();
+        ->has('sizes')->with('sizes')->with('department')->with('gender')->get();
         return response()->json(array(
             'articles' => $productListEloquent,
             //'NextPaginate' => $productListEloquent->nextPageUrl(),
+            'status'   => 'success'
+        ), 200);
+    }
+
+    public function getNewness() {
+        $newness = article::orderBy('created_at', 'DESC')->take(10)->get();
+        return response()->json(array(
+            'newness' => $newness,
             'status'   => 'success'
         ), 200);
     }
@@ -336,6 +361,8 @@ class ArticleController extends Controller
             $article->weight       = $params->weight;
             $article->photo        = $imgName;
             $article->gender       = $params->gender;
+            $article->gender_id    = $params->gender;
+            $article->dpt_id       = $params->department;
             if ($params->tags_id != 0) {
                 $article->tags_id     = $params->tags_id;
             }

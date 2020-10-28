@@ -25,7 +25,9 @@ class apartController extends Controller
     }
 
     public function getAllApart() {
-        $aparts = apart::with('admin')->with('articles')->with('client')->get();
+        //$aparts = apart::with('admin')->with('articles')->with('client')->get();
+        $aparts = $aparts= apart::where('admin_id','!=', null)->
+        where('clients_id','!=', null)->with('admin')->with('articles')->with('client')->get();
         return response()->json(array(
             'aparts' => $aparts,
             'status'   => 'success'
@@ -61,7 +63,7 @@ class apartController extends Controller
                 $apart->save();
                 $getApart = apart::where('clients_id', $params->clients_id);
                 $data = array(
-                    'apart'   => $getApart,
+                    'apart'      => $getApart,
                     'status'     => 'success',
                 );
             }
@@ -318,6 +320,7 @@ class apartController extends Controller
                 'status'  => 'fail',
                 'code'    => 400,
             );
+            return response()->json($data, 400);
         }
         return response()->json($data,200);
     }
