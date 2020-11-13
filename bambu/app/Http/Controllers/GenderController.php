@@ -6,7 +6,9 @@ use Illuminate\Http\Request;
 use Illuminate\support\Facades\Validator;
 use App\Helpers\jwtAuthAdmin;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use App\Gender;
+use Image;
 
 class GenderController extends Controller
 {
@@ -24,6 +26,14 @@ class GenderController extends Controller
             'code'    => 200
         );
         return response()->json($data, 200);
+    }
+
+    public function getGenderForId($idGender) {
+        $gender = Gender::findOrFail($idGender);
+        return response()->json(array(
+            'gender' => $gender,
+            'status' => 'success'
+        ), 200);
     }
 
     /**
@@ -61,6 +71,16 @@ class GenderController extends Controller
             }
 
             $gender = new Gender();
+            if ($params->img != '') {
+                $imgName = time() . $params->gender;
+                $img =  $params->img;
+                $img = str_replace('data:image/jpeg;base64,', '', $img);
+                $img = str_replace(' ', '+', $img);
+                $base = base64_decode($img);
+                $imgConvert = Image::make($base)->encode('jpg', 100);
+                Storage::disk('public')->put($imgName, $imgConvert);
+                $gender->img = $imgName;
+            }
             $gender->gender = $params->gender;
             $gender->save();
 
@@ -131,12 +151,30 @@ class GenderController extends Controller
             if ($validate->fails()) {
                 return response()->json($validate->errors(),400);
             }
-            unset($paramsArray['id']);
-            unset($paramsArray['created_at']);
-            $gender = Gender::where('id', $id)->update($paramsArray);
+            $lengthImg = strlen($params->img);
+            $isWeb = explode('/', $params->img);
+            if ($isWeb[0] == 'assets') {
+                unset($paramsArray['id']);
+                unset($paramsArray['created_at']);
+                $gender = Gender::where('id', $id)->update($paramsArray);
+            } else {
+                if ($lengthImg >= 100) {
+                    $img =  $params->img;
+                    $imgName = time() . $params->gender;
+                    $img = str_replace('data:image/jpeg;base64,', '', $img);
+                    $img = str_replace(' ', '+', $img);
+                    $base = base64_decode($img);
+                    $paramsArray['img'] = $imgName;
+                    $imgConvert = \Image::make($base)->encode('jpg', 100);
+                    \Storage::disk('public')->put($imgName, $imgConvert);
+                    unset($paramsArray['id']);
+                    unset($paramsArray['created_at']);
+                    $gender = Gender::where('id', $id)->update($paramsArray);
+                }
+            }
 
             $data = array(
-                'gender' => $gender,
+                'gender' => $paramsArray,
                 'status'  => 'success',
                 'code'    => 200
             );

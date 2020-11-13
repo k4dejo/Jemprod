@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use App\Helpers\jwtAuthAdmin;
 use Illuminate\Support\Facades\DB;
+use Image;
 use App\Gender;
 use App\Department;
 
@@ -18,7 +20,8 @@ class DepartmentController extends Controller
      */
     public function index()
     {
-        $department = Department::all();
+        //$department = Department::all();
+        $department = Department::with(['gender'])->get();
         $data = array(
             'departments' => $department,
             'status'  => 'success',
@@ -63,6 +66,16 @@ class DepartmentController extends Controller
                 return response()->json($validate->errors(),400);
             }
             $department = new Department();
+            if ($params->img != '') {
+                $imgName = time() . $params->department;
+                $img =  $params->img;
+                $img = str_replace('data:image/jpeg;base64,', '', $img);
+                $img = str_replace(' ', '+', $img);
+                $base = base64_decode($img);
+                $imgConvert = \Image::make($base)->encode('jpg', 100);
+                \Storage::disk('public')->put($imgName, $imgConvert);
+                $department->img = $imgName;
+            }
             $department->department = $params->department;
             $department->positionDpt = $params->positionDpt;
             $department->gender_id = $params->gender_id;
@@ -93,6 +106,14 @@ class DepartmentController extends Controller
     public function show($id)
     {
         $department = Department::find($id);
+        return response()->json(array(
+            'department' => $department,
+            'status'   => 'success'
+        ), 200);
+    }
+
+    public function getDepartmentForGender($idGender) {
+        $department = Department::where('gender_id', $idGender)->get();
         return response()->json(array(
             'department' => $department,
             'status'   => 'success'
@@ -136,9 +157,29 @@ class DepartmentController extends Controller
             if ($validate->fails()) {
                 return response()->json($validate->errors(),400);
             }
-            unset($paramsArray['id']);
-            unset($paramsArray['created_at']);
-            $department = Department::where('id', $id)->update($paramsArray);
+            $lengthImg = strlen($params->img);
+            $isWeb = explode('/', $params->img);
+            if ($isWeb[0] == 'assets') {
+                unset($paramsArray['id']);
+                unset($paramsArray['created_at']);
+                unset($paramsArray['gender']);
+                $department = Department::where('id', $id)->update($paramsArray);
+            } else {
+                if ($lengthImg >= 100) {
+                    $img =  $params->img;
+                    $imgName = time() . $params->gender;
+                    $img = str_replace('data:image/jpeg;base64,', '', $img);
+                    $img = str_replace(' ', '+', $img);
+                    $base = base64_decode($img);
+                    $paramsArray['img'] = $imgName;
+                    $imgConvert = \Image::make($base)->encode('jpg', 100);
+                    \Storage::disk('public')->put($imgName, $imgConvert);
+                    unset($paramsArray['id']);
+                    unset($paramsArray['gender']);
+                    unset($paramsArray['created_at']);
+                    $department = Department::where('id', $id)->update($paramsArray);
+                }
+            }
 
             $data = array(
                 'department' => $department,
@@ -166,6 +207,11 @@ class DepartmentController extends Controller
     public function destroy($id)
     {
         $department = Department::find($id);
+        //Borrar registro
+        $route = public_path().'\catalogo'.'\/';
+        $imgRoute = str_replace('/', '', $route);
+        $imgRoute = $imgRoute . $department->img;
+        Storage::delete($department->img);
         $department->delete();
         $data = array(
             'department' => $department,

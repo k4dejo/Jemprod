@@ -13,16 +13,32 @@ use App\size;
 use App\apart;
 use App\billing;
 use App\purchase;
+use App\Department;
 class ArticleController extends Controller
 {
 
     public function index(Request $request) {
        //listado de los articulos
-        $articles = article::all();
-        return response()->json(array(
-            'articles' => $articles,
-            'status'   => 'success'
+       $articles = article::with(['gender'])->with(['department'])->get();
+       //$articles = article::all();
+       //$pito = $this->addGenDpt($articles);
+       return response()->json(array(
+           'articles' => $articles,
+           //'pito'     => $pito,
+           'status'   => 'success'
         ), 200);
+    }
+
+    public function addGenDpt($articles) {
+        $countProducts = count($articles);
+        for ($i=0; $i < $countProducts; $i++) {
+            /*$dptSearch = Department::where('gender_id', $articles[$i]->gender_id)
+            ->where('positionDpt', $articles[$i]->department)->get();*/
+            $findDepartment = Department::find($articles[$i]->dpt_id);
+            $article = article::where('id', $articles[$i]->id)->update([
+             'department' => intval($findDepartment->id)
+            ]);
+        }
     }
 
     public function showPhotoProduct($id) {
@@ -36,9 +52,13 @@ class ArticleController extends Controller
     public function show($id)
     {
         $articles = article::find($id);
+        $productGender = article::find($id)->gender()->get();
+        $productDepartment = article::find($id)->department()->get();
         $arrayArticle = article::find($id)->sizes()->get();
         return response()->json(array(
             'articles' => $articles,
+            'gender'   => $productGender,
+            'department'   => $productDepartment,
             'arraySizeArticle' => $arrayArticle,
             'status'   => 'success'
         ), 200);
@@ -259,7 +279,7 @@ class ArticleController extends Controller
 
     public function getListProduct($department, $gender) {
         $productListEloquent = article::where('department', $department)->where('gender', $gender)
-        ->has('sizes')->with('sizes')->get();
+        ->has('sizes')->with('sizes')->with('department')->with('gender')->get();
         return response()->json(array(
             'articles' => $productListEloquent,
             //'NextPaginate' => $productListEloquent->nextPageUrl(),
