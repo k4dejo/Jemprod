@@ -52,6 +52,28 @@ class PurchaseController extends Controller
         ), 200);
     }
 
+    public function viewOrdensByStatus($status) {
+        $orders = purchase::where('status', $status)->with('articles')->get();
+        $countOrders = count($orders);
+        $totalPrice = 0;
+        $totalStock = 0;
+        for ($e=0; $e < $countOrders; $e++) {
+            $productsLength =  count($orders[$e]->articles);
+            for ($i=0; $i < $productsLength; $i++) {
+                $countSizes = $orders[$e]->articles[$i]->pivot->amount;
+                for ($index=0; $index < $countSizes; $index++) {
+                    $totalStock += $orders[$e]->articles[$i]->pivot->amount;
+                    $totalPrice += $orders[$e]->articles[$i]->pricePublic * $orders[$e]->articles[$i]->pivot->amount;
+                }
+            }
+        }
+        return response()->json(array(
+            'totalStock' => $totalStock,
+            'totalPrice' => $totalPrice,
+            'status'   => 'success'
+        ), 200);
+    }
+
 
 
     public function storeTicket(Request $request) {
@@ -64,7 +86,7 @@ class PurchaseController extends Controller
             $params = json_decode($json);
             $paramsArray = json_decode($json,true);
             //validación
-            $validate = Validator::make($paramsArray, [
+            $validate = \Validator::make($paramsArray, [
                 'ticket'             => 'required',
                 'purchase_id'        => 'required',
             ]);
@@ -115,7 +137,7 @@ class PurchaseController extends Controller
             $paramsArray = json_decode($json,true);
             $purchase = new purchase();
             //validación
-            $validate = Validator::make($paramsArray, [
+            $validate = \Validator::make($paramsArray, [
                 'clients_id'   => 'required',
                 'price'        => 'required',
                 'status'         => 'required'
@@ -236,11 +258,13 @@ class PurchaseController extends Controller
             $arrayProduct = article::find($idProduct)->sizes()->get();
             $countGetProduct = count($arrayProduct);
             for ($i=0; $i < $countGetProduct; $i++) {
-                $arrayProduct[$i]->pivot->stock = $arrayProduct[$i]->pivot->stock - $params->pivot->amount;
-                $size = size::find($arrayProduct[$i]->pivot->size_id);
-                $product = article::find($arrayProduct[$i]->pivot->article_id);
-                // modifica la cantidad del producto e la tabla pivote
-                $product->sizes()->updateExistingPivot($size->id,['stock' => $arrayProduct[$i]->pivot->stock ]);
+                if($arrayProduct[$i]->size == $params->pivot->size) {
+                    $arrayProduct[$i]->pivot->stock = $arrayProduct[$i]->pivot->stock - $params->pivot->amount;
+                    $size = size::find($arrayProduct[$i]->pivot->size_id);
+                    $product = article::find($arrayProduct[$i]->pivot->article_id);
+                    // modifica la cantidad del producto e la tabla pivote
+                    $product->sizes()->updateExistingPivot($size->id,['stock' => $arrayProduct[$i]->pivot->stock ]);
+                }
             }
             $data = array(
                 'article' => $product,
@@ -375,7 +399,7 @@ class PurchaseController extends Controller
         $params = json_decode($json);
         $paramsArray = json_decode($json,true);
         //validación
-        $validate = Validator::make($paramsArray, [
+        $validate = \Validator::make($paramsArray, [
             'idPurchase'   => 'required',
             'idProduct'    => 'required'
         ]);
@@ -505,7 +529,7 @@ class PurchaseController extends Controller
             'PurchaseShiping'          => $purchaseClient->shipping,
             'addressPurchase'          => $purchaseClient->addresspurchases_id,
             'status'                   => 'success',
-            'code'    => 200,
+            'code'                     => 200,
         );
         return response()->json($data,200);
     }
@@ -591,7 +615,7 @@ class PurchaseController extends Controller
             $params = json_decode($json);
             $paramsArray = json_decode($json, true);
             //validacion
-            $validate = Validator::make($paramsArray, [
+            $validate = \Validator::make($paramsArray, [
                 'clients_id'   => 'required',
                 'price'        => 'required'
             ]);
@@ -600,6 +624,7 @@ class PurchaseController extends Controller
             }
             unset($paramsArray['id']);
             unset($paramsArray['created_at']);
+            //$purchase->coupon_id = $params->coupon_id;
             $purchase = purchase::where('id', $params->id)->update($paramsArray);
             $data = array(
                 'purchase' => $purchase,

@@ -211,9 +211,8 @@ class sizeController extends Controller
                     $guiltyPurchase = true;
                 }
             }
-
             if (!$guiltyPurchase) {
-               $article->clients()->detach();
+                $article->purchases()->where('status', '!=', 'procesando')->wherePivot('article_id', $idProduct)->detach();
             } else {
                 return 'Prenda en carritos';
             }
@@ -235,13 +234,18 @@ class sizeController extends Controller
         if ($alertDelete != 'Prenda en carritos') {
             $article = article::findOrFail($id);
             $article->sizes()->detach();
-            // $article->clients()->detach();
+            $countImages = count($article->image()->get());
+            $article->clients()->wherePivot('article_id', $id)->detach();
+            $arrayImgProduct = $article->image()->get();
+            for ($i=0; $i < $countImages; $i++) {
+                app(imageController::class)->destroy($arrayImgProduct[$i]->id);
+            }
             //Borrar registro
             $route = public_path().'\catalogo'.'\/';
             $imgRoute = str_replace('/', '', $route);
             $imgRoute = $imgRoute . $article->photo;
-            Storage::delete($article->photo);
-            //Storage::disk('public')->delete($article->photo');
+            //Storage::delete($article->photo);
+            Storage::disk('public')->delete($article->photo);
             $article->delete();
             $data = array(
                 'status'  => 'Delete success',
