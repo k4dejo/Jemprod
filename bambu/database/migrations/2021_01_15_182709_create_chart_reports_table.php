@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateImagesTable extends Migration
+class CreateChartReportsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,14 +13,11 @@ class CreateImagesTable extends Migration
      */
     public function up()
     {
-        Schema::create('images', function (Blueprint $table) {
+        Schema::create('chart_reports', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('name');
+            $table->bigInteger('sellsOfDay');
+            $table->date('date');
             $table->timestamps();
-
-            // llaves foraneas 
-            $table->bigInteger('article_id')->unsigned()->nullable()->onDelete('cascade');
-            $table->foreign('article_id')->references('id')->on('articles');
         });
     }
 
@@ -31,6 +28,6 @@ class CreateImagesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('images');
+        Schema::dropIfExists('chart_reports');
     }
 }
