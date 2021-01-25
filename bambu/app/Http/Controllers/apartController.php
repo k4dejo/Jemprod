@@ -28,6 +28,14 @@ class apartController extends Controller
         $aparts = apart::whereHas('articles')
         ->where('admin_id','!=', null)->where('clients_id','!=', null)->with('admin')->with('articles')
         ->with('client')->get();
+        /*$isset_apart = apart::with('articles')->get();
+        foreach($isset_apart as $apart){
+            if(count($apart->articles) == 0){
+                apart::where('id', $apart->id)->update(['status' => 'completo']);
+            }else {
+                apart::where('id', $apart->id)->update(['status' => 'incompleto']);
+            }
+        }*/
         
         return response()->json(array(
             'aparts' => $aparts,
@@ -46,15 +54,6 @@ class apartController extends Controller
             }
         }
         return 'not found';
-        /*$isset_apart = apart::where('clients_id', $idClient)->where('status', 'incompleto')
-        ->with('articles')->get();
-        return $isset_apart;
-        $countapartProducts = count($isset_apart->articles);
-        if ($countapartProducts > 0) {
-            return $isset_apart;
-        } else {
-            return 'not found';
-        }*/
     }
 
     public function store(Request $request)

@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facturación</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+    crossorigin="anonymous">
 </head>
 
 <body style="style=width: 100%">
@@ -39,7 +40,13 @@
                         <td colspan="5">{{ $products->name }}</td>
                         <td>{{ $products->pivot->amount }}</td>
                         <td>{{ $products->pivot->size }}</td>
-                        <td>{{ $products->pricePublic }}</td>
+                        @if ( $invoice->typeSell === 'public' )
+                            <td>{{ $products->pricePublic }}</td>
+                        @elseif ( $invoice->typeSell === 'major')
+                            <td>{{ $products->priceMajor }}</td>
+                        @elseif ( $invoice->typeSell === 'boutique')
+                            <td>{{ $products->priceTuB }}</td>
+                        @endif
                     </tr>
                 @endforeach
                 </tbody>
@@ -47,8 +54,7 @@
         </div>
     </main>
     <footer>
-        <span><strong>Envío:</strong> ₡ {{ $invoice->shipping }}</span>
-        <span><strong>Total:</strong> ₡ {{$invoice->totalPrice}}</span>
+        <span><strong>Total:</strong> ¢ {{$invoice->totalPrice}}</span>
     </footer>
 </body>
 </html>

@@ -281,11 +281,14 @@ class ArticleController extends Controller
     }
 
     public function getListProduct($department, $gender) {
+        /*$productListEloquent = article::where('department', $department)->where('gender', $gender)
+        ->has('sizes')->with('sizes')->with('department')->with('gender')->get();*/
         $productListEloquent = article::where('department', $department)->where('gender', $gender)
-        ->has('sizes')->with('sizes')->with('department')->with('gender')->get();
+        ->has('sizes')-> whereHas('sizes', function($q) {
+            $q->where('stock', '>', 0);
+        })->with('sizes')->with('department')->with('gender')->get();
         return response()->json(array(
             'articles' => $productListEloquent,
-            //'NextPaginate' => $productListEloquent->nextPageUrl(),
             'status'   => 'success'
         ), 200);
     }
@@ -484,7 +487,6 @@ class ArticleController extends Controller
         $hash = $request->header('Authorization', null);
         $jwtAuthAdmin = new jwtAuthAdmin();
         $checkToken = $jwtAuthAdmin->checkToken($hash);
-
         if ($checkToken) {
             $json = $request->input('json', null);
             $params = json_decode($json);
@@ -512,7 +514,7 @@ class ArticleController extends Controller
             $paramsArray['dpt_id'] =  intval($params->department);
             unset($paramsArray['amount']);
             unset($paramsArray['size']);
-            if ($isWeb[0] == 'https') {
+            if ($isWeb[0] == 'https' || $isWeb[0] == 'http' ) {
                 $imgName = time() . $params->photo;
                 unset($paramsArray['id']);
                 unset($paramsArray['created_at']);

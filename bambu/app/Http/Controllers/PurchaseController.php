@@ -145,10 +145,14 @@ class PurchaseController extends Controller
             if ($validate->fails()) {
                 return response()->json($validate->errors(),400);
             }
+            if ($paramsArray['coupon_id'] === 0) {
+                unset($paramsArray['coupon_id']);
+            } else {
+                $purchase->coupon_id = $params->coupon_id;
+            }
             $purchase->clients_id = $params->clients_id;
             $purchase->price = $params->price;
             $purchase->status = $params->status;
-            $purchase->coupon_id = $params->coupon_id;
             $purchase->shipping = $params->shipping;
             $purchase->orderId  = \Str::random(20);
             if ($params->addresspurchases_id != 0) {
@@ -197,11 +201,11 @@ class PurchaseController extends Controller
             $paramsArray = json_decode($json,true);
             $time = time();
             $params->time = $time;
-            $key = 'wMZ86zdzku53x76FC557t688Gup3Vag3';
+            $key = 'FA7DbW4AU5HCd5JEZkT5DqrRrc8cSfu7';
             $hash = $params->order_id . '|' . $params->amount . '|'. $time . '|' . $key;
             $hashEncrypt = md5($hash);
-            $key_id = '13790849';
-            $procesor_id = '11442382';
+            $key_id = '13863264';
+            $procesor_id = '11625452';
             $data = array(
                 'hashCredomatic' => $hashEncrypt,
                 'key_id'         => $key_id,
@@ -610,6 +614,7 @@ class PurchaseController extends Controller
         $hash = $request->header('Authorization', null);
         $jwtAuthAdmin = new jwtAuthAdmin();
         $checkToken = $jwtAuthAdmin->checkToken($hash);
+
         if ($checkToken) {
             $json = $request->input('json', null);
             $params = json_decode($json);
@@ -628,12 +633,30 @@ class PurchaseController extends Controller
                 unset($paramsArray['coupon_id']);
             }
             // $purchase->coupon_id = $params->coupon_id;   
-            $purchase = purchase::where('id', $params->id)->update($paramsArray);   
+            $isset_purchase = DB::table('purchases')->where('clients_id', $params->clients_id)
+            ->where('status', $params->status)->get();
+            $countPurchase = count($isset_purchase);
+            /*$purchase = purchase::where('id', $params->id)->update($paramsArray);   
             $data = array(
                 'purchase' => $purchase,
                 'status'  => 'success',
                 'code'    => 200
-            );
+            );*/
+            if ($countPurchase == 0) {
+                $purchase->save();
+                $getPurchase = purchase::where('status', $params->status)->first();
+                $data = array(
+                    'purchase'   => $getPurchase,
+                    'status'     => 'success',
+                );
+            } else {
+                $getPurchase = purchase::where('status', $params->status)->first();
+                $data = array(
+                    'purchase'   => $getPurchase,
+                    'status'     => 'Exist',
+                );
+            }
+            return response()->json($data,200);
         } else {
             // Error
             $data = array(

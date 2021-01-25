@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-use PDF;
+use \PDF;
 use App\client;
 use App\article;
 use App\apart;
@@ -21,10 +21,12 @@ class invoiceController extends Controller
         $invoice->client = $client->name;
         $invoice->email = $client->email;
         $invoice->phone = $client->phone;
+        $invoice->typeSell = $apart->typeSell;
+        $invoice->totalPrice = $apart->price;
         $invoice->date = date('Y-m-d H:i:s');
         $invoice->products = $apartProducts;
-        $pdf = PDF::loadView('invoice', compact('invoice'));
-        // return $invoice;
+        $pdf = \PDF::loadView('invoice', compact('invoice'));
+        //return $invoice;
         return $pdf->stream('productos.pdf');
     }
 }

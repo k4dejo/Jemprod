@@ -203,4 +203,10 @@ Route::group(['middleware' => 'cors'], function(){
 
 
 
+   Route::get('/transac', 'reportController@viewTransac');
+
+
+
+
+
 

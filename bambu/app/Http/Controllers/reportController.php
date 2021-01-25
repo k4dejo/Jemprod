@@ -34,6 +34,10 @@ class reportController extends Controller
         $report->save();
     }
 
+    public function viewTransac() {
+        return view('transac');
+    } 
+
     public function viewSellingReports(Request $request) {
         $hash = $request->header('Authorization', null);
         $jwtAuthAdmin = new jwtAuthAdmin();

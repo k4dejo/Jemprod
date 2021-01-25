@@ -13,6 +13,7 @@ class invoice extends Model
         'phone',
         'shipping',
         'totalPrice',
+        'typeSell',
         'products'
     ];
 
